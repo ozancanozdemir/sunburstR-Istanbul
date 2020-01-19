@@ -1,0 +1,51 @@
+---
+title: "SunburstR Paketi ile 2019 Yılında Istanbul Büyüksehir Belediyesi'ne Ihbar Bırakan Ilçelerin Grafiklendirilmesi"
+author: "Ozancan Özdemir"
+output: html_document
+---
+
+Sunburst Diyagramı özellikle hiyerarşik dataların gösteriminde oldukça faydalı bir grafik. R'da Sunburst Diyagramı çizdirmek için çeşiti yollar var. Bunlardan bazıları ```plotly``` paketi kullanımı, ```ggplot2``` paketi kullanımı ve bir diğeri ise ```sunburstR``` paketi kullanımı.
+
+Bu öğreticide ```sunburstR``` paketi  kullanarak ülkedeki birçok belediyenin de yapması gerektiğini düşündüğüm veri paylaşım sistemini oluşturan Istanbul Büyüksehir Belediyesi'nin veri tabanından aldığım, ilçelerden gelen ihbar sayısını gösteren veri setini kullanarak basit bir sunburst diyagramı oluşturacağım.
+
+Veri tabanından aldığım veri setine ek olarak bir de ilçelerin yerel yönetimlerinin bağlı olduğu siyasi partileri 31 Mart 2019 seçim sonuçlarına bağlı kalarak ekledim ve bu yol ile istediğim hiyerarşik veri setini oluşturdum. 
+
+
+Öncelikle kullanacağım kütüphaneleri CRAN'dan çağırıyorum. 
+
+```{r,warning=FALSE,message=FALSE}
+library(tidyverse) #data düzenlemesi için
+library(d3r) #nested veri oluşturmak için
+library(sunburstR) #sunburst diyagramı çizdirmek için
+
+```
+
+
+```{r}
+ihbar=read.csv("ihbar.csv",header=T,sep=";")
+head(ihbar)
+```
+
+```{r}
+ihbar_new=ihbar%>%select(Parti,ılce,ıhbar)%>%arrange(Parti,ıhbar)%>%data.frame(stringsAsFactors = FALSE)
+data=data.frame(level=ihbar_new$Parti,level1=ihbar_new$ılce,size=ihbar_new$ıhbar,stringsAsFactors = FALSE)
+data$level=as.character(data$level)
+data$level1=as.character(data$level1)
+head(data)
+```
+
+Bu data düzenlemesindeki kritik nokta datayı nested hale getirmeden, datanın kolon isimlerini level ve level1 olarak değiştirmek. Ardından ```d3r``` paketinin içindeki ```d3_nest``` fonksiyonu yardımıyla yukarıdaki veri setini nested veri setine dönüştürüyoruz. 
+
+```{r}
+ihbar_nest <- d3_nest(data, value_cols = "size")
+ihbar_nest 
+```
+
+Nested veri setimizi de ```sunburst``` fonksiyonunu kullanarak interaktif diyagramımızı oluşturuyoruz. 
+
+```{r}
+sunburst(ihbar_nest , width="100%", height=400)
+```
+
+
+Bu grafiğe göre Istanbul Büyükşehir Belediyesi'ne gelen ihbarların %61.8'i AKP'ye bağlı ilçelerden, %34.7'si CHP'ye bağlı ilçelerden, %3.44'ü ise MHP'ye bağlı ilçeden gelmiştir. Belediyeye en fazla ihbarda bulunan ilçe %7.04 ile CHP'ye bağlı Esenyurt olurken, Üsküdar %5.19 ile AKP'ye bağlı ilçeler arasında belediyeye en fazla ihbarda bulunan ilçe olmuştur. Belediyeye en az ihbarı yapan ilçe ise %0.565 ile CHP'ye bağlı Adalar belediyesi olmuştur. 
